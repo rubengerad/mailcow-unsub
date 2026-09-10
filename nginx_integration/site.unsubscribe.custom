@@ -1,4 +1,6 @@
-# Drop this file into data/conf/nginx/conf.d/ on the mailcow host as
+# Drop this file into data/conf/nginx/ on the mailcow host (that directory is
+# itself bind-mounted to /etc/nginx/conf.d/ inside the nginx-mailcow
+# container -- there is no separate conf.d/ subfolder to create) as
 # site.unsubscribe.custom (any name matching site.*.custom works -- mailcow's
 # generated sites-default.conf includes that glob, and it is NOT overwritten
 # by update.sh/generate_config.sh).

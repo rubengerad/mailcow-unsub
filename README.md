@@ -114,8 +114,21 @@ A native GUI tab would require forking/patching mailcow-dockerized's PHP
 admin code, which isn't done here.
 
 The `docker-compose.yml` expects to join mailcow's own docker network so it can
-reach the `mysql` service by name — update the `networks.mailcow-network.name`
-value to match your mailcow install (`docker network ls | grep mailcow`).
+reach the `mysql` service by name. Find the exact network name on your mailcow
+host with `docker network ls | grep mailcow` (it's derived from whatever
+project/stack name mailcow was deployed under, e.g. `mailcowdockerized_mailcow-network`
+for a plain `mailcow-dockerized` checkout, but something else — e.g.
+`<stack-name>_mailcow-network` — if deployed via a PaaS like Dokploy/Portainer
+under a different project name) and set it via the `MAILCOW_NETWORK_NAME` env
+var rather than editing `docker-compose.yml` directly.
+
+**Deploying via a PaaS (Dokploy, Portainer, Coolify, etc.) that runs services
+under Docker Swarm mode:** this container needs to join mailcow's plain
+(non-swarm-scoped) bridge network directly, which standalone Swarm services
+generally cannot do. Deploy it as a **Compose/stack service** (plain
+`docker compose`, same deploy mechanism mailcow itself typically uses) rather
+than as an individual "app"/service resource, so it can join that bridge
+network the same way mailcow's own sidecar containers do.
 
 ### 2. Postfix integration (run on the mailcow host)
 
@@ -189,8 +202,30 @@ manually. Two parts:
 
    Expose it publicly under mailcow's own domain/TLS by dropping
    `nginx_integration/site.unsubscribe.custom` into
-   `data/conf/nginx/conf.d/` on the mailcow host (survives mailcow updates —
-   see the comment in that file for why).
+   `data/conf/nginx/` on the mailcow host — **not** a `conf.d/` subfolder;
+   `data/conf/nginx/` is itself bind-mounted straight to `/etc/nginx/conf.d/`
+   inside the `nginx-mailcow` container (confirm with
+   `docker inspect nginx-mailcow --format '{{json .Mounts}}'` if unsure). This
+   survives mailcow updates — see the comment in that file for why. Then
+   `docker restart nginx-mailcow` (or `docker compose restart nginx-mailcow`)
+   to pick it up.
+
+   **If mailcow's hostname sits behind an external reverse proxy** (Traefik,
+   Nginx Proxy Manager, Dokploy's built-in proxy, etc. — common when mailcow
+   is deployed alongside other apps on shared infrastructure), check that the
+   proxy actually routes plain HTTPS traffic for that hostname on port 443.
+   It's easy for only specific paths/subdomains (e.g. the webmail's own
+   subdomain, or the ACME `.well-known` challenge path) to be routed while
+   general traffic to mailcow's primary hostname falls through to the proxy's
+   default backend — in which case `/unsubscribe` (and mailcow's own webUI)
+   silently 404s on port 443 even though the nginx config above is correct
+   and the endpoint works fine on mailcow's own directly-mapped ports
+   (`HTTP_PORT`/`HTTPS_PORT` in `mailcow.conf`, default 8880/8443). Add a
+   route for the hostname if needed; prefer a **TCP/SNI passthrough** rule
+   over a proxy-terminated one so the proxy doesn't attempt to issue its own
+   TLS certificate for a hostname mailcow's own ACME client already manages
+   (two independent ACME clients racing for the same domain risks rate-limit
+   or challenge conflicts).
 
 2. **The outbound header.** Whatever composes your outbound mail (e.g.
    zipbook) needs to add `List-Unsubscribe` / `List-Unsubscribe-Post` headers
