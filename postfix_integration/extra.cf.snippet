@@ -1,0 +1,24 @@
+# Append (or merge into) data/conf/postfix/extra.cf on the mailcow host.
+#
+# Postfix main.cf resolves a repeated parameter by taking the LAST
+# definition it parses, and mailcow appends extra.cf to the end of the
+# generated main.cf. That means we can override smtpd_recipient_restrictions
+# here WITHOUT editing mailcow's generated main.cf directly (which gets
+# regenerated and would silently drop manual edits).
+#
+# Steps:
+#   1. Get mailcow's current value so nothing else breaks:
+#        docker compose exec postfix-mailcow postconf smtpd_recipient_restrictions
+#   2. Copy that value below, and insert our check_recipient_access clause
+#      as the FIRST restriction (so unsubscribed recipients are rejected
+#      before any other rule has a chance to permit/discard them).
+#
+# Example (adjust to match what step 1 actually returned for your install):
+
+smtpd_recipient_restrictions =
+    check_recipient_access mysql:/opt/postfix/conf/sql/mysql-virtual-unsub-recipient.cf,
+    permit_mynetworks,
+    permit_sasl_authenticated,
+    reject_unauth_destination,
+    check_policy_service unix:private/policyd-spf,
+    check_policy_service inet:127.0.0.1:10023

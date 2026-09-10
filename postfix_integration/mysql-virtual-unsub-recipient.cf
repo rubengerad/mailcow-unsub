@@ -1,0 +1,12 @@
+# Postfix check_recipient_access lookup map.
+# Deploy this file into the mailcow postfix container's SQL config dir:
+#   data/conf/postfix/sql/mysql-virtual-unsub-recipient.cf
+#
+# It rejects delivery to any recipient present in the unsubscribes table,
+# which is populated by the mailcow-unsub IMAP poller.
+
+user = mailcow_mysql_user_here
+password = mailcow_mysql_password_here
+hosts = mysql
+dbname = mailcow
+query = SELECT 'REJECT This recipient has unsubscribed and may not receive further mail' FROM unsubscribes WHERE email='%s'

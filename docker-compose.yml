@@ -1,0 +1,29 @@
+services:
+  mailcow-unsub:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - mailcow-network
+    volumes:
+      # Recommended: mount mailcow's own generated config read-only so
+      # app/bootstrap.py can derive MYSQL_*/IMAP_HOST/MAILCOW_API_URL and
+      # self-provision an API key automatically instead of you copying
+      # those values into .env by hand. Point this at wherever your
+      # mailcow-dockerized checkout actually lives.
+      - /path/to/mailcow-dockerized/mailcow.conf:/mailcow.conf:ro
+      # Needed because BOUNCE_NOTIFY_ENABLED=true by default (see
+      # .env.example) so the container can tail postfix-mailcow's logs for
+      # reject events. This grants the container read access to the Docker
+      # API, which is effectively root-equivalent on the host -- comment
+      # this out AND set BOUNCE_NOTIFY_ENABLED=false if you're not
+      # comfortable with that trade-off.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  # Join mailcow's own docker network so this container can reach the
+  # "mysql" service by name. Find the exact network name on the mailcow
+  # host with: docker network ls | grep mailcow
+  mailcow-network:
+    external: true
+    name: mailcowdockerized_mailcow-network
