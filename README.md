@@ -265,3 +265,7 @@ manually. Two parts:
   you retain an audit trail directly in the mailbox as well as in the DB.
 - Not yet wired: exposing an admin view of the `unsubscribes` table. Query it
   directly against mailcow's MySQL DB in the meantime.
+
+## Author
+
+**Ruben Gerad Mathew** — [On2Ai Systems](https://on2ai.org) — rubengerad@on2ai.org
