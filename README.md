@@ -1,5 +1,7 @@
 # mailcow-unsub
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
+
 Standalone service that watches a designated mailbox (e.g. `unsubscribe@yourdomain.com`)
 on a mailcow server, records every sender who emails it into a suppression table in
 mailcow's own MySQL database, and wires that table into Postfix so **mailcow itself
