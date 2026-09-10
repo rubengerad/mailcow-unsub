@@ -23,7 +23,8 @@ services:
 networks:
   # Join mailcow's own docker network so this container can reach the
   # "mysql" service by name. Find the exact network name on the mailcow
-  # host with: docker network ls | grep mailcow
+  # host with: docker network ls | grep mailcow -- override via
+  # MAILCOW_NETWORK_NAME if it differs from the mailcow-dockerized default.
   mailcow-network:
     external: true
-    name: mailcowdockerized_mailcow-network
+    name: ${MAILCOW_NETWORK_NAME:-mailcowdockerized_mailcow-network}
