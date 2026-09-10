@@ -154,6 +154,36 @@ This walks through, step by step:
 commands rather than blindly rewriting live mail server config, since getting
 `smtpd_recipient_restrictions` wrong can break all outbound mail.
 
+#### Exempting specific senders (e.g. support@) from the block
+
+Because the block happens in Postfix, it applies to *every* outbound
+message to a suppressed recipient — including a personal reply or a
+support-ticket answer, not just bulk/marketing mail. If some mailbox needs
+to keep corresponding 1:1 with people even after they've unsubscribed, list
+its SASL username in `UNSUB_EXEMPT_SASL_USERNAMES` (comma-separated) in
+`.env`; `app/bootstrap.py` seeds it into the `unsub_exempt_senders` table on
+every startup. `mysql-virtual-unsub-exempt-sender.cf` (deployed by
+`install.sh` alongside the recipient map) queries that table via Postfix's
+`check_sasl_access`, placed *before* `check_recipient_access` in
+`extra.cf.snippet` — an exempt sender is `OK`'d and short-circuits the
+recipient-suppression check entirely.
+
+You can also add/remove exemptions directly against mailcow's DB without
+touching `.env`:
+```sql
+INSERT INTO unsub_exempt_senders (sasl_username, note)
+VALUES ('support@yourdomain.com', 'needs to keep replying to open tickets');
+
+DELETE FROM unsub_exempt_senders WHERE sasl_username = 'support@yourdomain.com';
+```
+
+This exempts whole mailboxes, not individual in-thread replies — Postfix's
+recipient restrictions run at `RCPT TO` time, before the message body/headers
+(`References`/`In-Reply-To`) exist on the wire, so "let it through only if
+it's a reply" isn't expressible via `check_recipient_access`/`check_sasl_access`
+alone. Doing that would require a content filter or milter that inspects
+headers instead; not implemented here.
+
 ### 3. Sender bounce notifications (on by default)
 
 `BOUNCE_NOTIFY_ENABLED=true` out of the box in `.env.example`, so senders get

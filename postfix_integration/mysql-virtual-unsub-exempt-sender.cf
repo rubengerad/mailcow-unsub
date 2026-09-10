@@ -1,0 +1,23 @@
+# Postfix check_sasl_access lookup map.
+# Deploy this file into the mailcow postfix container's SQL config dir:
+#   data/conf/postfix/sql/mysql-virtual-unsub-exempt-sender.cf
+#
+# Looked up by SASL-authenticated username (NOT recipient). If the
+# authenticated sender is in the unsub_exempt_senders table, this returns
+# OK, which immediately permits the message and short-circuits the rest of
+# smtpd_recipient_restrictions -- including the check_recipient_access
+# suppression REJECT in mysql-virtual-unsub-recipient.cf. That lets a
+# designated personal/support mailbox keep emailing someone who
+# unsubscribed, while every other sender stays blocked from that recipient.
+#
+# Add an exemption:
+#   INSERT INTO unsub_exempt_senders (sasl_username, note)
+#   VALUES ('support@yourdomain.com', 'needs to keep replying to open tickets');
+# Remove one:
+#   DELETE FROM unsub_exempt_senders WHERE sasl_username = 'support@yourdomain.com';
+
+user = mailcow_mysql_user_here
+password = mailcow_mysql_password_here
+hosts = mysql
+dbname = mailcow
+query = SELECT 'OK' FROM unsub_exempt_senders WHERE sasl_username='%s'

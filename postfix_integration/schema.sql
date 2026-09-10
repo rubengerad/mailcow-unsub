@@ -26,6 +26,18 @@ CREATE TABLE IF NOT EXISTS bounce_notifications (
     UNIQUE KEY uniq_sender_recipient (sasl_username, recipient)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- SASL usernames (mailcow mailboxes) exempted from the unsubscribe block --
+-- e.g. a support@ or personal@ mailbox that needs to keep replying to
+-- someone even after they unsubscribed from bulk mail. Checked by
+-- check_sasl_access BEFORE check_recipient_access in
+-- smtpd_recipient_restrictions (see extra.cf.snippet), so a match here
+-- bypasses the recipient-suppression REJECT entirely for that sender.
+CREATE TABLE IF NOT EXISTS unsub_exempt_senders (
+    sasl_username VARCHAR(255) NOT NULL PRIMARY KEY,
+    note VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Small persistent key/value store for secrets mailcow-unsub generates for
 -- itself on first boot (e.g. UNSUB_MAILBOX_PASSWORD, ONE_CLICK_TOKEN_SECRET)
 -- when they aren't supplied in .env, so restarts reuse the same value

@@ -17,18 +17,22 @@ echo "    (edit credentials as needed, then run manually):"
 echo "    docker compose exec mysql-mailcow mysql -u root -p mailcow < postfix_integration/schema.sql"
 echo
 
-echo "==> 2. Copy the check_recipient_access map into postfix's SQL config dir"
+echo "==> 2. Copy the check_recipient_access and check_sasl_access maps into"
+echo "    postfix's SQL config dir"
 cp -v postfix_integration/mysql-virtual-unsub-recipient.cf \
    "$MAILCOW_DIR/data/conf/postfix/sql/mysql-virtual-unsub-recipient.cf"
-echo "    NOW EDIT that file and fill in the real mailcow MySQL user/password"
+cp -v postfix_integration/mysql-virtual-unsub-exempt-sender.cf \
+   "$MAILCOW_DIR/data/conf/postfix/sql/mysql-virtual-unsub-exempt-sender.cf"
+echo "    NOW EDIT both files and fill in the real mailcow MySQL user/password"
 echo "    (same credentials mailcow's other sql/*.cf files under data/conf/postfix/sql/ use)."
 echo
 
 echo "==> 3. Merge postfix_integration/extra.cf.snippet into data/conf/postfix/extra.cf"
 echo "    Compare against current restrictions first:"
 echo "    docker compose exec postfix-mailcow postconf smtpd_recipient_restrictions"
-echo "    Then hand-edit data/conf/postfix/extra.cf to add the check_recipient_access line"
-echo "    as the FIRST restriction, keeping the rest of your existing rule list intact."
+echo "    Then hand-edit data/conf/postfix/extra.cf to add the check_sasl_access line"
+echo "    FIRST and the check_recipient_access line immediately after it, keeping the"
+echo "    rest of your existing rule list intact."
 echo
 
 echo "==> 4. Restart postfix to apply"

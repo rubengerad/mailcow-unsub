@@ -36,6 +36,14 @@ def add_unsubscribe(conn, email: str, source: str, subject: str | None, message_
             return False
 
 
+def add_exempt_sender(conn, sasl_username: str, note: str | None = None) -> None:
+    with conn.cursor() as cur:
+        cur.execute(
+            "INSERT IGNORE INTO unsub_exempt_senders (sasl_username, note) VALUES (%s, %s)",
+            (sasl_username.lower(), note),
+        )
+
+
 def should_notify_sender(conn, sasl_username: str, recipient: str, cooldown_hours: int) -> bool:
     """True if we haven't already sent this sender a notification about this
     recipient within the cooldown window (Postfix retries a queued message

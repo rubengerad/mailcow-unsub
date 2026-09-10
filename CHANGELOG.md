@@ -5,6 +5,17 @@ All notable changes to this project are documented here. Versioning follows
 `MAJOR` marks breaking changes to `.env` config, the suppression table
 schema, or the manual Postfix/nginx integration steps.
 
+## [1.1.0] - 2026-09-10
+
+### Added
+- Sender exemptions: designated SASL-authenticated mailboxes (e.g.
+  `support@yourdomain.com`) can keep emailing recipients who've
+  unsubscribed, via a new `unsub_exempt_senders` table, a `check_sasl_access`
+  Postfix map (`postfix_integration/mysql-virtual-unsub-exempt-sender.cf`)
+  checked before `check_recipient_access`, and a `UNSUB_EXEMPT_SASL_USERNAMES`
+  env var seeded by `app/bootstrap.py`. See README "Exempting specific
+  senders" for setup and limitations (whole-mailbox only, not per-reply).
+
 ## [1.0.0] - 2026-09-10
 
 Initial public release.

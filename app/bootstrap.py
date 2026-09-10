@@ -12,7 +12,7 @@ import secrets
 
 from dotenv import dotenv_values
 
-from db import get_connection
+from db import add_exempt_sender, get_connection
 
 log = logging.getLogger("mailcow-unsub")
 
@@ -141,5 +141,15 @@ def run() -> None:
         if one_click and not os.environ.get("ONE_CLICK_TOKEN_SECRET"):
             os.environ["ONE_CLICK_TOKEN_SECRET"] = _get_or_create_secret(conn, "one_click_token_secret")
             log.info("ONE_CLICK_TOKEN_SECRET auto-generated and persisted")
+
+        exempt = [
+            u.strip().lower()
+            for u in os.environ.get("UNSUB_EXEMPT_SASL_USERNAMES", "").split(",")
+            if u.strip()
+        ]
+        for username in exempt:
+            add_exempt_sender(conn, username, note="seeded from UNSUB_EXEMPT_SASL_USERNAMES")
+        if exempt:
+            log.info("Seeded %d exempt sender(s) from UNSUB_EXEMPT_SASL_USERNAMES", len(exempt))
     finally:
         conn.close()
